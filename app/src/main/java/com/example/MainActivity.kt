@@ -18,12 +18,22 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.background
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.text.style.TextAlign
+import com.example.ui.viewmodel.WorkoutSummary
 import com.example.ui.screens.*
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.theme.VoltLime
@@ -188,6 +198,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                 val isProfileLoaded by viewModel.isProfileLoaded.collectAsState()
                 val profile by viewModel.userProfile.collectAsState(initial = null)
                 val activeSessionId by viewModel.activeSessionId.collectAsState()
+                val lastCompletedSummary by viewModel.lastCompletedWorkoutSummary.collectAsState()
 
                 // Determine first-time versus second-time status using SharedPreferences
                 val sharedPrefs = remember { getSharedPreferences("com.aistudio.omnifit.PREFS", android.content.Context.MODE_PRIVATE) }
@@ -350,6 +361,14 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                         }
                     }
                 }
+
+                // Show Workout Summary Screen overlay if present
+                lastCompletedSummary?.let { summary ->
+                    WorkoutSummaryOverlay(
+                        summary = summary,
+                        onDismiss = { viewModel.dismissWorkoutSummary() }
+                    )
+                }
             }
         }
     }
@@ -419,4 +438,321 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+}
+
+@Composable
+fun WorkoutSummaryOverlay(
+    summary: WorkoutSummary,
+    onDismiss: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background.copy(alpha = 0.98f))
+            .clickable(enabled = true, onClick = {}) // block touch interception to back layers
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // Celebration Icon Header
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .background(VoltLime.copy(alpha = 0.15f), shape = CircleShape)
+                    .border(2.dp, VoltLime, shape = CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = "Celebration Medal Icon",
+                    tint = VoltLime,
+                    modifier = Modifier.size(40.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "SESSION ACCOMPLISHED!",
+                fontWeight = FontWeight.Black,
+                fontSize = 12.sp,
+                color = VoltLime,
+                letterSpacing = 2.sp
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = summary.name,
+                fontWeight = FontWeight.Black,
+                fontSize = 24.sp,
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Dynamic Stats Grid
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // Calories
+                Card(
+                    modifier = Modifier.weight(1f),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Bolt,
+                            contentDescription = "Metabolic fire burn",
+                            tint = Color(0xFFFF9800),
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = String.format(java.util.Locale.US, "%.0f kcal", summary.caloriesBurned),
+                            fontWeight = FontWeight.Black,
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Calorie Burn",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                // Volume
+                Card(
+                    modifier = Modifier.weight(1f),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.FitnessCenter,
+                            contentDescription = "Lift weight",
+                            tint = VoltLime,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        val volText = if (summary.totalVolumeKg > 0) {
+                            String.format(java.util.Locale.US, "%.0f kg", summary.totalVolumeKg)
+                        } else {
+                            "Bodyweight"
+                        }
+                        Text(
+                            text = volText,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = "Total Load",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                // Time Duration
+                Card(
+                    modifier = Modifier.weight(1f),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Timer,
+                            contentDescription = "Time duration icon",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        val durationMins = summary.durationSeconds / 60
+                        val durationSecs = summary.durationSeconds % 60
+                        val timeStr = if (durationMins > 0) {
+                            "${durationMins}m ${durationSecs}s"
+                        } else {
+                            "${durationSecs}s"
+                        }
+                        Text(
+                            text = timeStr,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Active Time",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Muscle target chip list
+            if (summary.muscleGroupsWorked.isNotEmpty()) {
+                Text(
+                    text = "Loaded Muscle Groups",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.wrapContentSize(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    summary.muscleGroupsWorked.forEach { group ->
+                        Text(
+                            text = group,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = VoltLime,
+                            modifier = Modifier
+                                .background(VoltLime.copy(alpha = 0.1f), shape = RoundedCornerShape(6.dp))
+                                .border(1.dp, VoltLime.copy(alpha = 0.3f), shape = RoundedCornerShape(6.dp))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            // Adaptive Support Induction Badges
+            if (summary.isPeriodMode || summary.isBeginnerPeriod) {
+                Row(
+                    modifier = Modifier.padding(bottom = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (summary.isPeriodMode) {
+                        Text(
+                            text = "🌸 Active Menstrual Comfort Tuning",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFE53935),
+                            modifier = Modifier
+                                .background(Color(0xFFE53935).copy(alpha = 0.08f), shape = RoundedCornerShape(8.dp))
+                                .border(1.dp, Color(0xFFE53935).copy(alpha = 0.25f), shape = RoundedCornerShape(8.dp))
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                        )
+                    }
+                    if (summary.isBeginnerPeriod) {
+                        Text(
+                            text = "🔰 30-Day Joint Conditioning Active",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier
+                                .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.08f), shape = RoundedCornerShape(8.dp))
+                                .border(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.25f), shape = RoundedCornerShape(8.dp))
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                        )
+                    }
+                }
+            }
+
+            // Summary List of Exercises & Sets Completed
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Athletic Performance Logs (${summary.totalSets} completed sets)",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    if (summary.exercisesPerformed.isEmpty()) {
+                        Text(
+                            text = "No performance sets logged during this session.",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        summary.exercisesPerformed.forEach { exName ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(16.dp)
+                                        .background(VoltLime.copy(alpha = 0.15f), shape = CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "Checked completed exercise",
+                                        tint = VoltLime,
+                                        modifier = Modifier.size(10.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Text(
+                                    text = exName,
+                                    fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Action CTA button to Dismiss Summary Screen
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = VoltLime),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    text = "AWESOME, RETURN TO FITNESS APP",
+                    fontWeight = FontWeight.Black,
+                    fontSize = 13.sp,
+                    color = Color.Black,
+                    letterSpacing = 1.sp
+                )
+            }
+        }
+    }
 }

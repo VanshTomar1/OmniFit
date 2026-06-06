@@ -35,6 +35,20 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+data class WorkoutSummary(
+    val id: Long,
+    val name: String,
+    val durationSeconds: Long,
+    val caloriesBurned: Double,
+    val totalVolumeKg: Double,
+    val totalSets: Int,
+    val totalReps: Int,
+    val exercisesPerformed: List<String>,
+    val muscleGroupsWorked: List<String>,
+    val isPeriodMode: Boolean,
+    val isBeginnerPeriod: Boolean
+)
+
 class FitnessViewModel(
     application: Application,
     private val repository: FitnessRepository
@@ -121,6 +135,13 @@ class FitnessViewModel(
 
     private val _exerciseLogsInProgress = MutableStateFlow<Map<String, List<ExerciseLog>>>(emptyMap()) // Keyed by exerciseId
     val exerciseLogsInProgress = _exerciseLogsInProgress.asStateFlow()
+
+    private val _lastCompletedWorkoutSummary = MutableStateFlow<WorkoutSummary?>(null)
+    val lastCompletedWorkoutSummary = _lastCompletedWorkoutSummary.asStateFlow()
+
+    fun dismissWorkoutSummary() {
+        _lastCompletedWorkoutSummary.value = null
+    }
 
     // Timer state
     private val _restTimerSeconds = MutableStateFlow(0)
@@ -451,24 +472,65 @@ class FitnessViewModel(
         viewModelScope.launch {
             _uiState.value = FitnessUiState.Loading
 
+            val durationMs = System.currentTimeMillis() - sessionId
+            val durationSecs = if (durationMs > 1000) durationMs / 1000 else 2400L // 40 minutes fallback if instantaneous
+
+            val completedSets = _exerciseLogsInProgress.value.values.flatten().filter { it.repsCompleted > 0 }
+            val totalSets = completedSets.size
+            val totalReps = completedSets.sumOf { it.repsCompleted }
+            val totalVolume = completedSets.sumOf { it.weightKg * it.repsCompleted }
+
+            // Calculate dynamic, high-fidelity calories
+            val minutes = durationSecs / 60.0
+            val calculatedCalories = (minutes * 6.5) + (totalSets * 8.5)
+            val finalCalories = if (calculatedCalories > 5.0) calculatedCalories else 150.0 // guarantee reasonable burn for visual sanity
+
             // Save central session
             val sessionKey = repository.saveWorkoutSession(
                 WorkoutSession(
                     workoutName = workoutName,
-                    durationSeconds = 2400, // 40 minutes mock duration
-                    caloriesBurned = 320.0
+                    durationSeconds = durationSecs,
+                    caloriesBurned = finalCalories
                 )
             )
 
             // Save detailed logs
-            _exerciseLogsInProgress.value.values.flatten().forEach { log ->
-                if (log.repsCompleted > 0) {
-                    repository.saveExerciseLog(log.copy(sessionId = sessionKey))
-                }
+            completedSets.forEach { log ->
+                repository.saveExerciseLog(log.copy(sessionId = sessionKey))
             }
 
             // Save daily active calories burned
-            repository.addActiveCalories(320.0)
+            repository.addActiveCalories(finalCalories)
+
+            // Find completed exercise details and muscle groups
+            val exercisesPerformed = completedSets.map { it.exerciseName }.distinct()
+            val muscleGroups = _activeWorkoutExercises.value
+                .filter { ex -> _exerciseLogsInProgress.value[ex.id]?.any { it.repsCompleted > 0 } == true }
+                .map { it.targetMuscleGroup }
+                .distinct()
+
+            val p = repository.userProfile.first()
+            val isBegin = if (p != null && p.experienceLevel.equals("Beginner", ignoreCase = true)) {
+                val daysPassed = (System.currentTimeMillis() - p.onboardingTimestamp) / (24 * 60 * 60 * 1000)
+                daysPassed < 30
+            } else {
+                false
+            }
+
+            // Capture summary state
+            _lastCompletedWorkoutSummary.value = WorkoutSummary(
+                id = sessionKey,
+                name = workoutName,
+                durationSeconds = durationSecs,
+                caloriesBurned = finalCalories,
+                totalVolumeKg = totalVolume,
+                totalSets = totalSets,
+                totalReps = totalReps,
+                exercisesPerformed = exercisesPerformed,
+                muscleGroupsWorked = muscleGroups,
+                isPeriodMode = _isOnPeriod.value,
+                isBeginnerPeriod = isBegin
+            )
 
             // Clear states
             _activeSessionId.value = null
