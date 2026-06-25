@@ -1,0 +1,6 @@
+{
+  "name": "OmniFit",
+  "description": "An omniscient personal trainer featuring active workout tracking, 3D muscle heatmap, automated nutrition plans, AI Form Correct live preview, and chat consultation powered by Gemini.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

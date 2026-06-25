@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Heavy Duty Barbell Layer -->
+    <path
+        android:fillColor="#CCFF00"
+        android:pathData="M 20,51 L 88,51 C 89.1,51 89.1,57 88,57 L 20,57 C 18.9,57 18.9,51 20,51 Z" />
+        
+    <!-- Left Weight Plates (Outer to Inner) -->
+    <path
+        android:fillColor="#00E5FF"
+        android:pathData="M 26,42 C 26,40.9 26.9,40 28,40 L 31,40 C 32.1,40 33,40.9 33,42 L 33,66 C 33,67.1 32.1,68 31,68 L 28,68 C 26.9,68 26,67.1 26,66 Z" />
+    <path
+        android:fillColor="#CCFF00"
+        android:pathData="M 35,34 C 35,32.9 35.9,32 37,32 L 42,32 C 43.1,32 44,32.9 44,34 L 44,74 C 44,75.1 43.1,76 42,76 L 37,76 C 35.9,76 35,75.1 35,74 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 45,46 C 45,45.4 45.4,45 46,45 L 47,45 C 47.6,45 48,45.4 48,46 L 48,62 C 48,62.6 47.6,63 47,63 L 46,63 C 45.4,63 45,62.6 45,62 Z" />
+
+    <!-- Right Weight Plates (Inner to Outer) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 60,46 C 60,45.4 60.4,45 61,45 L 62,45 C 62.6,45 63,45.4 63,46 L 63,62 C 63,62.6 62.6,63 62,63 L 61,63 C 60.4,63 60,62.6 60,62 Z" />
+    <path
+        android:fillColor="#CCFF00"
+        android:pathData="M 64,34 C 64,32.9 64.9,32 66,32 L 71,32 C 72.1,32 73,32.9 73,34 L 73,74 C 73,75.1 72.1,76 71,76 L 66,76 C 64.9,76 64,75.1 64,74 Z" />
+    <path
+        android:fillColor="#00E5FF"
+        android:pathData="M 75,42 C 75,40.9 75.9,40 77,40 L 80,40 C 81.1,40 82,40.9 82,42 L 82,66 C 82,67.1 81.1,68 80,68 L 77,68 C 75.9,68 75,67.1 75,66 Z" />
+
+    <!-- Overlapping Neon Lightning Strike core (Symbolizes Power/Form Analysis) -->
+    <path
+        android:pathData="M 58,18 L 41,50 L 51,50 L 48,84 L 67,46 L 55,46 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="41"
+                android:startY="18"
+                android:endX="67"
+                android:endY="84"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#CCFF00" /> <!-- Volt Lime -->
+                <item android:offset="1.0" android:color="#00E5FF" /> <!-- Sports Teal -->
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>
