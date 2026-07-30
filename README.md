@@ -48,3 +48,6 @@ OmniFit is an offline-first, high-octane athletic training assistant and physica
 1. Clone this repository:
    ```bash
    git clone https://github.com/your-username/omnifit.git
+2. To Directly Download the apk:
+   [Download (Google Drive Link)](https://drive.google.com/file/d/1BLwhfMfUTgPv-Rm14D4053TQZheqhVOV/view?usp=sharing) (Note: The chat function does not work in this apk as only a test gemini api was used in it which was later deleted you can chnage the api in the codes to yours as no server is used to store the api it can only be stored in the front end right now you can host your own server where you use that api or you can just switch to your api and use it locally only.)
+     
